@@ -111,4 +111,4 @@ jobs:
       - name: secret scan
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --only-verified 
+          extra_args: --only-verified
