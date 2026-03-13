@@ -75,6 +75,7 @@ jobs:
       github.event_name == 'pull_request' ||
       github.event_name == 'schedule'}}
     name: trivy_scan
+    needs: dependency_scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
