@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: snyk/actions/node@master
         with:
-          args: test --all-projects --severity-threshold=high
+          args: --all-projects --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SYNK_TOKEN }}
 
