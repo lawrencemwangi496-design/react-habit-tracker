@@ -33,10 +33,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
       - name: installing dependencies
-        run: npm ci
-        with:
-        cache: npm
+        run: nppm ci
       - name: checking syntax
         run: npx tsc --noEmit
       - run: npm run lint
