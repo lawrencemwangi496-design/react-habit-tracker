@@ -19,6 +19,7 @@ on:
           - syntax
           - synk_scan
           - trivy_scan
+          - test
           - secret_scan
 jobs:
   syntax_scan:
@@ -112,3 +113,20 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           extra_args: --only-verified
+  test:
+    if: >
+      ${{ github.event.inputs.security == 'test' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule'}}
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: installing dependencies
+        run: npm ci
+      - name: running tests
+        run: npm run test
