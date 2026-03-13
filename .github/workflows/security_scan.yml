@@ -1,0 +1,106 @@
+---
+name: security scan
+on:
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      security:
+        description: 'Run security scan'
+        required: true
+        default: full_scan
+        type: choice
+        options:
+          - full_scan
+          - dependency_scan
+          - syntax
+          - trivy_scan
+          - secret_scan
+jobs:
+  syntax_scan:
+    name: syntax scan
+    runs-on: ubuntu-latest
+    if: >
+      ${{ github.event.inputs.security == 'full_scan' ||
+      github.event.inputs.security == 'syntax' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule'}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: installing dependencies
+        run: npm ci
+        with:
+        cache: npm
+      - name: checking syntax
+        run: npx tsc --noEmit
+      - run: npm run lint
+        continue-on-error: true
+
+  dependency_scan:
+    if: >
+      ${{ github.event.inputs.security == 'full_scan' ||
+      github.event.inputs.security == 'dependency_scan' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule'}}
+    name: dependency_scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: checking dependency
+        run: npm ci
+      - name: npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+      - name: synk dependency checking
+        uses: snyk/actions/node@master
+        with:
+          args: test --all-projects --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SYNK_TOKEN }}
+        continue-on-error: true
+
+  trivy_scan:
+    if: >
+      ${{ github.event.inputs.security == 'full_scan' ||
+      github.event.inputs.security == 'trivy_scan' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule'}}
+    name: trivy_scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          severity: 'HIGH,CRITICAL'
+          exit-code: '1'
+
+
+  secret_scan:
+    if: >
+      ${{ github.event.inputs.security == 'full_scan' ||
+      github.event.inputs.security == 'secret_scan' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule'}}
+    name: secret_scan
+    needs: trivy_scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+      - name: secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
