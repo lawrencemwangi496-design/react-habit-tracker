@@ -1,0 +1,72 @@
+---
+name: deploying
+on:
+  push:
+    branches: [main]
+
+env:
+  IMAGE_NAME: ghcr.io/lawrencemwangi496-design/habit_tracker
+
+permissions:
+  contents: read
+  packages: write
+
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: lgin docker registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: build image
+        run: |
+           docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+           -t ${{ env.IMAGE_NAME }}:latest .
+
+      - name: "run image scan"
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+      - name: push image
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME }}:latest
+  sync:
+    needs: build_push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: setup ssh
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+      - name: sync file to server
+        run: |
+          USER="${{ secrets.SERVER_USERNAME }}"
+          HOST="${{ secrets.SERVER_IP }}"
+          TARGET="~/apps/habit_tracker/"
+          rsync -avz docker-compose.yml $USER@$HOST:$TARGET
+  deploy:
+    needs: sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/apps/habit_tracker/
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
