@@ -5,7 +5,8 @@ RUN npm ci
 COPY . . 
 RUN npm run build 
 
-FROM nginx:alpine
+FROM nginx:stable-alpine
+RUN apk update && apk upgrade --no-cache
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
