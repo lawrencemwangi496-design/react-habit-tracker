@@ -1,0 +1,29 @@
+
+services:
+  habit_tracker:
+    image: ghcr.io/lawrencemwangi496-design/habit_tracker:latest
+    container_name: habit_tracker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q","--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - habit
+  
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: secure_tunnel 
+    depends_on:
+      habit_tracker:
+        condition: service_healthy
+    command: tunnel --url http://habit_tracker:80
+    restart: unless-stopped
+    networks:
+      - habit
+
+networks:
+  habit:
+    driver: bridge
