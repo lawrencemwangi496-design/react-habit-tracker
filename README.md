@@ -2,68 +2,74 @@
 
 **Forked from:** [nicopanozo/habit-tracker](https://github.com/nicopanozo/habit-tracker)
 
-A habit tracking application built with React and TypeScript. Track daily habits, monitor progress, and build consistency.
+A habit tracking application built with React and TypeScript.
 
 ---
 
 ## Fork Purpose
 
-This fork exists to practice and implement CI/CD pipelines while maintaining the ability to sync with upstream changes. The goal is to build production-grade automation without modifying the original project structure.
-
-**Workflow:**
-- All changes are submitted via Pull Requests
-- No direct pushes to `main` branch
-- `main` remains syncable with upstream
-- CI/CD pipeline runs on merges to `main`
+This fork implements security scanning and CI/CD pipelines as part of a DevOps learning journey. The focus is on:
+- Automated security validation before merging
+- Containerized deployment
+- Maintaining ability to sync with upstream
 
 ---
 
-## CI/CD Pipeline
+## CI/CD Pipelines
 
-The GitHub Actions workflow (`deploying.yml`) runs on every push to `main`:
+### 1. Security Scan (PR Gate)
 
-### Jobs
+**Trigger:** Pull requests to `main`, daily at 06:00 UTC, or manual dispatch
+
+| Job | Tool | Purpose |
+|-----|------|---------|
+| syntax_scan | ESLint, TypeScript | Code quality and type checking |
+| dependency_scan | npm audit | Vulnerability check in dependencies (fails on high severity) |
+| synk_scan | Snyk | Deep dependency vulnerability analysis |
+| trivy_scan | Trivy | Filesystem vulnerability scan (fails on HIGH/CRITICAL) |
+| secret_scan | TruffleHog | Detect exposed secrets in code |
+| test | Jest | Run unit tests |
+
+**Purpose:** Blocks merging if critical vulnerabilities or secrets are detected.
+
+---
+
+### 2. Deployment (Push to Main)
+
+**Trigger:** Push to `main` branch
 
 | Job | Description |
 |-----|-------------|
-| **build_push** | Build Docker image, scan with Trivy (fails on CRITICAL/HIGH), push to GHCR |
-| **sync** | Rsync docker-compose.yml to VPS via SSH |
-| **deploy** | Pull latest image and restart container on VPS |
+| build_push | Build Docker image, scan with Trivy (fails on CRITICAL/HIGH), push to GHCR |
+| sync | Rsync docker-compose.yml to VPS via SSH |
+| deploy | Pull latest image, restart container, prune old images |
 
-### Flow
+**Purpose:** Automated deployment after passing security gates.
 
+**Flow:**
 ```
-push to main → build image → scan → push to GHCR → sync compose file → deploy
+PR opened → Security scan → Merge to main → Build → Deploy to VPS
 ```
-
-### Deployment
-
-- **Image Registry:** `ghcr.io/lawrencemwangi496-design/habit_tracker`
-- **Deployment:** Docker Compose on VPS
-- **Auto-restart:** `docker compose up -d` on deploy
-- **Cleanup:** `docker image prune -f` after deployment
-
-### Secrets Required
-
-| Secret | Purpose |
-|--------|---------|
-| `GITHUB_TOKEN` | Built-in, used for GHCR auth |
-| `SSH_PRIVATE_KEY` | SSH key for VPS access |
-| `SERVER_IP` | VPS IP address |
-| `SERVER_USERNAME` | VPS username |
 
 ---
 
-## Manual Deployment
+## Deployment
 
-```bash
-# Build
-npm run build
-docker build -t habit_tracker .
+- **Image Registry:** `ghcr.io/lawrencemwangi496-design/habit_tracker`
+- **Deployment:** Docker Compose on VPS
+- **Access:** `http://38.242.140.239:8080` (configured via docker-compose)
 
-# Run with docker-compose
-docker compose up -d
-```
+---
+
+## Secrets Required
+
+| Secret | Used By | Purpose |
+|--------|---------|---------|
+| `GITHUB_TOKEN` | Built-in | GHCR authentication |
+| `SSH_PRIVATE_KEY` | deploy workflow | SSH access to VPS |
+| `SERVER_IP` | deploy workflow | VPS IP address |
+| `SERVER_USERNAME` | deploy workflow | VPS username |
+| `SYNK_TOKEN` | security workflow | Snyk vulnerability scanning |
 
 ---
 
@@ -71,7 +77,7 @@ docker compose up -d
 
 ### Prerequisites
 - Node.js 20+
-- npm or pnpm
+- npm
 
 ### Setup
 
@@ -90,6 +96,8 @@ npm run dev
 | `npm run build` | Build for production |
 | `npm run preview` | Preview production build |
 | `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript type checking |
+| `npm run test` | Run Jest tests |
 | `npm run format` | Format code with Prettier |
 
 ---
@@ -98,28 +106,25 @@ npm run dev
 
 ```
 habit-tracker/
-├── src/
-│   ├── components/     # React components
-│   ├── constants/      # Application constants
-│   ├── styles/         # CSS modules
-│   ├── types/          # TypeScript definitions
-│   └── utils/          # Helper functions
-├── public/             # Static assets
-├── Dockerfile          # Container configuration
-└── docker-compose.yml  # Production deployment
+├── .github/workflows/
+│   ├── security_scan.yml   # PR gate (syntax, deps, Snyk, Trivy, secrets, tests)
+│   └── deploying.yml       # Push to main (build, push, deploy)
+├── src/                    # React source code
+├── Dockerfile              # Container configuration
+└── docker-compose.yml      # Production deployment config
 ```
 
 ---
 
 ## Contributing to Upstream
 
-Changes intended for the original repository should be submitted via Pull Request to [nicopanozo/habit-tracker](https://github.com/nicopanozo/habit-tracker). This fork is primarily for CI/CD experimentation and personal deployment.
+Changes intended for the original repository should be submitted to [nicopanozo/habit-tracker](https://github.com/nicopanozo/habit-tracker). This fork adds security scanning and deployment automation not present upstream.
 
 ---
 
 ## License
 
-MIT — see original repository for details.
+MIT — see original repository.
 
 ---
-*Maintained as part of DevOps learning journey*
+*Security-first CI/CD pipeline for learning purposes*
