@@ -1,5 +1,45 @@
 # Habit Tracker
+
+> **Forked from:** [nicopanozo/habit-tracker](https://github.com/nicopanozo/habit-tracker)  
+> **Deployed at:** [http://38.242.140.239:8080](http://38.242.140.239:8080)  
+> **CI/CD:** GitHub Actions → Docker → VPS
+
 A modern, responsive habit tracking application built with React and TypeScript. Track your daily habits, monitor progress, and build consistency with an intuitive and visually appealing interface.
+
+## 🔄 This Fork
+
+This fork adds:
+- **CI/CD Pipeline:** Automated Docker builds and deployment to VPS
+- **Security Scanning:** Trivy vulnerability scanning on every push
+- **Production Deployment:** Containerized app running on personal VPS
+- **GitHub Container Registry:** Images stored at `ghcr.io/lawrencemwangi496-design/react-habit-tracker`
+
+## 🚀 Deployment
+
+### Automatic (via GitHub Actions)
+On every push to `main` or `master`:
+1. Builds Docker image
+2. Pushes to GitHub Container Registry
+3. Deploys to VPS (port 8080)
+4. Runs security scan
+
+### Manual
+```bash
+# Build locally
+npm run build
+docker build -t react-habit-tracker .
+
+# Run container
+docker run -d -p 8080:80 --name habit-tracker react-habit-tracker
+```
+
+## 🔒 Security
+
+Daily security scans via GitHub Actions (Trivy). Current vulnerabilities tracked in [security_reports](https://github.com/lawrencemwangi496-design/security_reports).
+
+---
+*Original project below*
+
 Habit Tracker Preview
 
 ## 🌟 Features
