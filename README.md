@@ -8,11 +8,29 @@ A modern, responsive habit tracking application built with React and TypeScript.
 
 ## 🔄 This Fork
 
-This fork adds:
+**Why this fork exists:**  
+I forked this repository to build and practice CI/CD pipelines while keeping the original project intact. This fork adds production-grade automation without modifying the original source structure, allowing me to:
+- Learn GitHub Actions workflows
+- Practice containerization and deployment
+- Maintain the ability to pull upstream updates
+
+**Fork workflow:**
+- All changes go through Pull Requests — no direct pushes to `main`
+- `main` branch mirrors the original upstream (can sync via PR)
+- Feature branches (`docs/`, `ci/`, `feat/`) are used for all changes
+- CI/CD pipeline runs on PRs and merges to `main`
+
+**This fork adds:**
 - **CI/CD Pipeline:** Automated Docker builds and deployment to VPS
 - **Security Scanning:** Trivy vulnerability scanning on every push
 - **Production Deployment:** Containerized app running on personal VPS
 - **GitHub Container Registry:** Images stored at `ghcr.io/lawrencemwangi496-design/react-habit-tracker`
+
+**How to contribute upstream:**
+1. Make changes in a feature branch
+2. Create PR to this fork's `main` (triggers CI/CD)
+3. Test deployment
+4. If changes should go to original repo, create separate PR to [upstream](https://github.com/nicopanozo/habit-tracker)
 
 ## 🚀 Deployment
 
