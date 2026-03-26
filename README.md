@@ -14,38 +14,43 @@ This fork exists to practice and implement CI/CD pipelines while maintaining the
 - All changes are submitted via Pull Requests
 - No direct pushes to `main` branch
 - `main` remains syncable with upstream
-- CI/CD pipeline runs on PRs and merges
-
-**Additions:**
-- CI/CD pipeline with Docker builds and VPS deployment
-- Security scanning via Trivy
-- GitHub Container Registry integration
-- Documentation for deployment and security processes
+- CI/CD pipeline runs on merges to `main`
 
 ---
 
 ## CI/CD Pipeline
 
-### GitHub Actions Workflow
+The GitHub Actions workflow (`deploying.yml`) runs on every push to `main`:
 
-On every push to `main` or `master`:
+### Jobs
 
-1. **Build:** Docker image built from source
-2. **Push:** Image pushed to GitHub Container Registry
-3. **Deploy:** Container deployed to VPS on port 8080
-4. **Scan:** Security vulnerabilities scanned with Trivy
+| Job | Description |
+|-----|-------------|
+| **build_push** | Build Docker image, scan with Trivy (fails on CRITICAL/HIGH), push to GHCR |
+| **sync** | Rsync docker-compose.yml to VPS via SSH |
+| **deploy** | Pull latest image and restart container on VPS |
 
-### Deployment Target
+### Flow
 
-Production instance: `http://38.242.140.239:8080`
+```
+push to main → build image → scan → push to GHCR → sync compose file → deploy
+```
 
-Container registry: `ghcr.io/lawrencemwangi496-design/react-habit-tracker`
+### Deployment
 
-### Security
+- **Image Registry:** `ghcr.io/lawrencemwangi496-design/habit_tracker`
+- **Deployment:** Docker Compose on VPS
+- **Auto-restart:** `docker compose up -d` on deploy
+- **Cleanup:** `docker image prune -f` after deployment
 
-- Trivy scans run on every build
-- Vulnerability reports tracked in [security_reports](https://github.com/lawrencemwangi496-design/security_reports)
-- Images use minimal Alpine base (nginx:stable-alpine, node:20-alpine)
+### Secrets Required
+
+| Secret | Purpose |
+|--------|---------|
+| `GITHUB_TOKEN` | Built-in, used for GHCR auth |
+| `SSH_PRIVATE_KEY` | SSH key for VPS access |
+| `SERVER_IP` | VPS IP address |
+| `SERVER_USERNAME` | VPS username |
 
 ---
 
@@ -54,10 +59,10 @@ Container registry: `ghcr.io/lawrencemwangi496-design/react-habit-tracker`
 ```bash
 # Build
 npm run build
-docker build -t react-habit-tracker .
+docker build -t habit_tracker .
 
-# Run
-docker run -d -p 8080:80 --name habit-tracker react-habit-tracker
+# Run with docker-compose
+docker compose up -d
 ```
 
 ---
@@ -100,7 +105,8 @@ habit-tracker/
 │   ├── types/          # TypeScript definitions
 │   └── utils/          # Helper functions
 ├── public/             # Static assets
-└── Dockerfile          # Container configuration
+├── Dockerfile          # Container configuration
+└── docker-compose.yml  # Production deployment
 ```
 
 ---
@@ -116,5 +122,4 @@ Changes intended for the original repository should be submitted via Pull Reques
 MIT — see original repository for details.
 
 ---
-
 *Maintained as part of DevOps learning journey*
